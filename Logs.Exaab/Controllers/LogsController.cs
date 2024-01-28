@@ -1,38 +1,35 @@
 ﻿using Logs.Exaab.Models;
+using Logs.Exaab.Services;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
+using System.Linq.Expressions;
 
 namespace Logs.Exaab.Controllers
 {
 	public class LogsController : Controller
 	{
-		private readonly MongoClient _client;
 		private readonly ILogger _logger;
-		private readonly string _databaseName;
-		private readonly string _databaseCollection;
-		public LogsController(MongoDBSetting settings, ILogger<LogsController> logger)
-		{
-			_logger = logger;
-			_databaseName = settings.DatabaseName;
-			_client = _client = new MongoClient(settings.databaseUrl);
-			_databaseCollection = settings.collectionName;
-		}
-			
-		public IActionResult Index()
-		{
-			var collection = _client.GetDatabase(_databaseName).GetCollection<BsonDocument>(_databaseCollection);
-			var projection = Builders<BsonDocument>.Projection.
-				Include("MessageTemplate").
-				Include("Level").Include("UtcTimestamp").
-				Include("Properties").
-				Include("Exception").
-				Include("SourceContext");
-			var document = collection.Find(Builders<BsonDocument>.Filter.Empty).Project(projection).ToList();
-			var Data = document.Select(v => BsonSerializer.Deserialize<LogsModel>(v)).ToList();
+		private readonly ILogsService _logsService;
 
-			return View(Data);
+		public LogsController( ILogger<LogsController> logger, ILogsService logsService)
+		{
+			_logger = logger;	
+			_logsService = logsService;
+		
+		}
+        public IActionResult GetData()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public JsonResult GetData(string ErrorType)
+			{
+			var data = _logsService.GetLogs(ErrorType);
+
+            return Json(data);
 		}
 	}
 }

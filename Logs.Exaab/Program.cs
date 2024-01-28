@@ -1,4 +1,5 @@
 using Logs.Exaab.Models;
+using Logs.Exaab.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -12,6 +13,7 @@ builder.Host.UseSerilog((context, config) =>
 {
 	config.ReadFrom.Configuration(context.Configuration);
 });
+builder.Services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
 builder.Services.Configure<MongoDBSetting>(
   builder.Configuration.GetSection("MongoDBSettings"));
 builder.Services.AddSingleton(sp =>
@@ -20,12 +22,13 @@ Log.Logger = new LoggerConfiguration()
 	.Enrich.FromLogContext()
 	.WriteTo.Console()
 	.CreateLogger();
-
+builder.Services.AddScoped<ILogsService, LogsService>();
 
 var app = builder.Build();
+app.UseStaticFiles();
 app.MapControllerRoute(
 name: "default",
-pattern: "{controller=Logs}/{action=Index}"
+pattern: "{controller=Logs}/{action=GetData}"
 );
 
 try
